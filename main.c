@@ -5,24 +5,49 @@
 
 #include <X11/Xlib.h>
 
+typedef struct Position {
+    int x;
+    int y;
+} Position;
+
 int main(void) {
     XEvent event;
-    printf("Let's build some X11 Window Manager!\n");
+    Position coor;
+    coor.x = 50;
+    coor.y = 50;
     char hello[] = "Hello, World!\n";
-    print_hello(hello);
 
     Display *display = XOpenDisplay(NULL);
-    Window w = XCreateSimpleWindow(display, DefaultRootWindow(display), 50, 50, 250, 250, 1, BlackPixel(display, 0), WhitePixel(display, 0));
-    XMapWindow(display, w);
-    XSelectInput(display, w, ExposureMask);
+    if (display == NULL) {
+        fprintf(stderr, "Unable to open display!\n");
+        return 1;
+    }
 
-    for (;;) {
+    Window root = DefaultRootWindow(display);
+    Window win = XCreateSimpleWindow(display, root, 0, 0, 800, 600, 1, BlackPixel(display, 0), WhitePixel(display, 0));
+    XMapWindow(display, win);
+    XFlush(display);
+    XSelectInput(display, win, ExposureMask | KeyPressMask);
+
+    while (1) {
         XNextEvent(display, &event);
-        if (event.type == Expose) {
-            XDrawString(display, w, DefaultGC(display, 0), 100, 100, hello, 13);
-            // XDrawLine(display, w, DefaultGC(display, 0), 100, 100, 13, 13);
+        switch(event.type) {
+            case Expose:
+                XDrawString(display, win, DefaultGC(display, 0), coor.x, coor.y, hello, 13);
+                XFlush(display);
+                coor.x = coor.x + 5;
+                coor.y = coor.y + 5;
+                break;
+            case KeyPress:
+                XDrawString(display, win, DefaultGC(display, 0), coor.x, coor.y, "Key pressed", 13);
+                XFlush(display);
+                coor.x = coor.x + 5;
+                coor.y = coor.y + 5;
+                break;
         }
     }
+
+    XCloseDisplay(display);
 
     return 0;
 }
